@@ -11,6 +11,7 @@ import TablaVentas from '../components/historial/TablaVentas';
 import ModalVerDetalle from '../components/historial/modals/ModalVerDetalle';
 import ModalEditarVenta from '../components/historial/modals/ModalEditarVenta';
 import ModalReimprimir from '../components/historial/modals/ModalReimprimir';
+import WhatsAppService from '../services/WhatsAppService';
 
 const Historial = () => {
   // Contextos
@@ -211,7 +212,10 @@ const Historial = () => {
       const success = await imprimirTicketHistorial();
       if (!success) return; 
     }
-    if (enviarWhatsApp) console.log(`Enviando ticket por WhatsApp de venta #${ventaSeleccionada.id}`);
+    if (enviarWhatsApp) {
+      const negocioConfig = { nombre: obtenerConfig('negocio_nombre', 'MI NEGOCIO') };
+      WhatsAppService.enviarTicketWhatsApp(ventaSeleccionada, itemsVentaSeleccionada, negocioConfig);
+    }
     setModalReimprimir(false);
     setVentaSeleccionada(null);
   };

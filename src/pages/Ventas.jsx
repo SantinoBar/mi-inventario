@@ -11,6 +11,7 @@ import BuscadorCliente from '../components/ventas/BuscadorCliente';
 import ListaItemsVenta from '../components/ventas/ListaItemsVenta';
 import DetallesPagoVenta from '../components/ventas/DetallesPagoVenta';
 import ModalConfirmacionVenta from '../components/ventas/modals/ModalConfirmacionVenta';
+import WhatsAppService from '../services/WhatsAppService';
 
 const Ventas = () => {
   // Contextos
@@ -225,7 +226,18 @@ const Ventas = () => {
 
   const confirmarModal = async () => {
     if (generarTickets) await imprimirTicket();
-    if (enviarWhatsApp) console.log('Enviando ticket por WhatsApp');
+    if (enviarWhatsApp) {
+      const resultItems = await obtenerItemsVenta(ventaCreada.id);
+      if (resultItems.success) {
+        const negocioConfig = { nombre: obtenerConfig('negocio_nombre', 'MI NEGOCIO') };
+        const ventaAEnviar = {
+          ...ventaCreada,
+          cliente_nombre: clienteSeleccionado?.nombre || 'Público en General',
+          cliente_telefono: clienteSeleccionado?.telefono
+        };
+        WhatsAppService.enviarTicketWhatsApp(ventaAEnviar, resultItems.data, negocioConfig);
+      }
+    }
     cerrarModal();
   };
 
