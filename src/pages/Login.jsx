@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LogIn } from 'lucide-react';
+import { BotonInstalarPWA } from '../components/common';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -100,6 +101,8 @@ const Login = () => {
                 {loading ? 'Iniciando...' : 'Entrar'}
               </button>
             </div>
+            
+            <BotonInstalarPWA />
           </form>
         </div>
       </div>

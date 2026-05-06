@@ -6,56 +6,32 @@ import { useGastos } from '../context/GastosContext';
 
 const Reportes = () => {
   // Obtener datos de los contextos
-  const { ventas, obtenerVentasPorPeriodo, obtenerTotalPorPeriodo } = useVentas();
+  const { ventas, obtenerVentasPorPeriodo } = useVentas();
   const { gastos, obtenerTotalPorPeriodo: obtenerGastosPorPeriodo, obtenerGastosPorCategoria } = useGastos();
 
   // Estado del período seleccionado
-  const [periodoSeleccionado, setPeriodoSeleccionado] = useState('mes');
-
-  // Períodos disponibles
-  const periodos = [
-    { valor: 'dia', etiqueta: 'Día' },
-    { valor: 'semana', etiqueta: 'Semana' },
-    { valor: 'mes', etiqueta: 'Mes' },
-    { valor: 'anual', etiqueta: 'Anual' }
-  ];
-
-  // Calcular fechas según período
-  const obtenerFechasPeriodo = (periodo) => {
-    let hoy = new Date();
-    let fechaFin = new Date(hoy);
-    let fechaInicio = new Date(hoy);
-
-    switch (periodo) {
-      case 'dia':
-        fechaInicio.setHours(0, 0, 0, 0);
-        fechaFin.setHours(23, 59, 59, 999);
-        break;
-      case 'semana':
-        const diaSemana = hoy.getDay();
-        const diasHastaLunes = diaSemana === 0 ? 6 : diaSemana - 1;
-        fechaInicio.setDate(hoy.getDate() - diasHastaLunes);
-        fechaInicio.setHours(0, 0, 0, 0);
-        fechaFin.setHours(23, 59, 59, 999);
-        break;
-      case 'mes':
-        fechaInicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
-        fechaFin = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0, 23, 59, 59, 999);
-        break;
-      case 'anual':
-        fechaInicio = new Date(hoy.getFullYear(), 0, 1);
-        fechaFin = new Date(hoy.getFullYear(), 11, 31, 23, 59, 59, 999);
-        break;
-      default:
-        break;
-    }
-
-    return { fechaInicio, fechaFin };
-  };
+  const hoy = new Date();
+  const [mesSeleccionado, setMesSeleccionado] = useState(hoy.getMonth()); // 0-11, o 'todos'
+  const [anioSeleccionado, setAnioSeleccionado] = useState(hoy.getFullYear());
 
   // Calcular datos del período usando useMemo para optimizar
   const datos = useMemo(() => {
-    const { fechaInicio, fechaFin } = obtenerFechasPeriodo(periodoSeleccionado);
+    // Calcular fechas según período
+    const obtenerFechasPeriodo = () => {
+      let fechaInicio, fechaFin;
+      
+      if (mesSeleccionado === 'todos') {
+        fechaInicio = new Date(anioSeleccionado, 0, 1);
+        fechaFin = new Date(anioSeleccionado, 11, 31, 23, 59, 59, 999);
+      } else {
+        fechaInicio = new Date(anioSeleccionado, mesSeleccionado, 1);
+        fechaFin = new Date(anioSeleccionado, parseInt(mesSeleccionado) + 1, 0, 23, 59, 59, 999);
+      }
+
+      return { fechaInicio, fechaFin };
+    };
+
+    const { fechaInicio, fechaFin } = obtenerFechasPeriodo();
 
     // Obtener ventas del período
     const ventasPeriodo = obtenerVentasPorPeriodo(
@@ -91,7 +67,7 @@ const Reportes = () => {
       // Top productos se calculará después cuando tengamos ventas_items
       topProductos: []
     };
-  }, [periodoSeleccionado, ventas, gastos, obtenerVentasPorPeriodo, obtenerGastosPorPeriodo, obtenerGastosPorCategoria]);
+  }, [mesSeleccionado, anioSeleccionado, ventas, gastos, obtenerVentasPorPeriodo, obtenerGastosPorPeriodo, obtenerGastosPorCategoria]);
 
   const gananciaReal = datos.ventas - datos.gastos;
   const porcentajeGanancia = datos.ventas > 0 ? ((gananciaReal / datos.ventas) * 100).toFixed(1) : 0;
@@ -114,20 +90,26 @@ const Reportes = () => {
 
         <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
           {/* Selector de período */}
-          <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
-            {periodos.map(periodo => (
-              <button
-                key={periodo.valor}
-                onClick={() => setPeriodoSeleccionado(periodo.valor)}
-                className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                  periodoSeleccionado === periodo.valor
-                    ? 'bg-white text-primary-700 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
-              >
-                {periodo.etiqueta}
-              </button>
-            ))}
+          <div className="flex gap-2 w-full sm:w-auto">
+            <select 
+              value={mesSeleccionado}
+              onChange={(e) => setMesSeleccionado(e.target.value === 'todos' ? 'todos' : parseInt(e.target.value))}
+              className="flex-1 sm:w-40 px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-sm"
+            >
+              <option value="todos" className="font-bold">Todo el Año</option>
+              {['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'].map((mes, i) => (
+                <option key={mes} value={i}>{mes}</option>
+              ))}
+            </select>
+            <select 
+              value={anioSeleccionado}
+              onChange={(e) => setAnioSeleccionado(parseInt(e.target.value))}
+              className="flex-1 sm:w-28 px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary-500 shadow-sm"
+            >
+              {[2024, 2025, 2026, 2027, 2028].map(anio => (
+                <option key={anio} value={anio}>{anio}</option>
+              ))}
+            </select>
           </div>
 
           {/* Botón exportar */}
